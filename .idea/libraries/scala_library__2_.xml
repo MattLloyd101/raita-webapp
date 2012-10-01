@@ -1,0 +1,17 @@
+<component name="libraryTable">
+  <library name="scala-library (2)">
+    <CLASSES>
+      <root url="jar://E:/Apps/scala-2.9.1.final/lib/scala-library.jar!/" />
+      <root url="jar://E:/Apps/scala-2.9.1.final/lib/scala-swing.jar!/" />
+      <root url="jar://E:/Apps/scala-2.9.1.final/lib/scala-dbc.jar!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="file://E:/Apps/scala-2.9.1.final/doc/scala-devel-docs/api" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://E:/Apps/scala-2.9.1.final/src/scala-library-src.jar!/" />
+      <root url="jar://E:/Apps/scala-2.9.1.final/src/scala-swing-src.jar!/" />
+      <root url="jar://E:/Apps/scala-2.9.1.final/src/scala-dbc-src.jar!/" />
+    </SOURCES>
+  </library>
+</component>

@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ProjectModuleManager">
+    <modules>
+      <module fileurl="file://$PROJECT_DIR$/.idea_modules/raita-webapp.iml" filepath="$PROJECT_DIR$/.idea_modules/raita-webapp.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea_modules/raita-webapp-build.iml" filepath="$PROJECT_DIR$/.idea_modules/raita-webapp-build.iml" />
+      <module fileurl="file://$PROJECT_DIR$/../test-features/test-features.iml" filepath="$PROJECT_DIR$/../test-features/test-features.iml" />
+    </modules>
+  </component>
+</project>
+

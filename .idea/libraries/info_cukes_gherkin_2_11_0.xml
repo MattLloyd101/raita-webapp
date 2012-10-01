@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="info.cukes_gherkin_2.11.0">
+    <CLASSES>
+      <root url="jar://E:/Apps/play-2.0.3/repository/cache/info.cukes/gherkin/bundles/gherkin-2.11.0.jar!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://E:/Apps/play-2.0.3/repository/cache/info.cukes/gherkin/docs/gherkin-2.11.0-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://E:/Apps/play-2.0.3/repository/cache/info.cukes/gherkin/srcs/gherkin-2.11.0-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

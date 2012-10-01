@@ -1,0 +1,13 @@
+<component name="libraryTable">
+  <library name="info.cukes_cucumber-core_1.0.9">
+    <CLASSES>
+      <root url="jar://E:/Apps/play-2.0.3/repository/cache/info.cukes/cucumber-core/jars/cucumber-core-1.0.9.jar!/" />
+    </CLASSES>
+    <JAVADOC>
+      <root url="jar://E:/Apps/play-2.0.3/repository/cache/info.cukes/cucumber-core/docs/cucumber-core-1.0.9-javadoc.jar!/" />
+    </JAVADOC>
+    <SOURCES>
+      <root url="jar://E:/Apps/play-2.0.3/repository/cache/info.cukes/cucumber-core/srcs/cucumber-core-1.0.9-sources.jar!/" />
+    </SOURCES>
+  </library>
+</component>

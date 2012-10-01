@@ -1,0 +1,9 @@
+Manifest-Version: 1.0
+Implementation-Vendor: temp-features
+Implementation-Title: temp-features
+Implementation-Version: 1.0-SNAPSHOT
+Implementation-Vendor-Id: temp-features
+Specification-Vendor: temp-features
+Specification-Title: temp-features
+Specification-Version: 1.0-SNAPSHOT
+
