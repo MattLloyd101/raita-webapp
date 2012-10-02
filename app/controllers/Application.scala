@@ -1,22 +1,22 @@
 package controllers
 
-import play.api._
 import play.api.mvc._
 import cucumber.runtime._
-import cucumber.io.{ResourceLoader, MultiLoader, ClasspathResourceLoader}
+import cucumber.io._
+import scalax.io.{Resource => SResource}
 import java.net.{URL, URLClassLoader}
-import java.io.{IOException, File}
-import org.xeustechnologies.jcl.JarClassLoader
+import java.io.File
+import java.util.zip.{ZipEntry, ZipFile}
 
 object Application extends Controller {
   def loadBackends(resourceLoader: ResourceLoader, classLoader: ClassLoader) = {
-    val crl =  new ClasspathResourceLoader(classLoader)
+    val crl = new ClasspathResourceLoader(classLoader)
     crl.instantiateSubclasses(Predef.classOf[Backend], "cucumber.runtime", Array(Predef.classOf[ResourceLoader]), Array(resourceLoader))
   }
 
   object using {
 
-    def apply[A <: {def close(): Unit}, B](obj: A)(f : A => B): B = {
+    def apply[A <: {def close() : Unit}, B](obj: A)(f: A => B): B = {
       try {
         f(obj)
       } finally {
@@ -25,67 +25,90 @@ object Application extends Controller {
     }
   }
 
-  def addFile(s:String):ClassLoader = {
+  def addFile(s: String): ClassLoader = {
     addFile(new File(s))
   }
 
-  def addFile(f:File):ClassLoader = {
+  def addFile(f: File): ClassLoader = {
     addURL(f.toURL())
   }
 
-  def addURL(u:URL):ClassLoader = {
-//    val sysloader = ClassLoader.getSystemClassLoader().asInstanceOf[URLClassLoader]
-//    val sysclass = Predef.classOf[URLClassLoader]
-//    val parameters = Predef.classOf[URL]
-//    println(u)
-//    try {
-//      val method = sysclass.getDeclaredMethod("addURL", parameters)
-//      method.setAccessible(true)
-//      method.invoke(sysloader, u)
-//    } catch {
-//      case t =>
-//      t.printStackTrace()
-//      throw new IOException("Error, could not add URL to system classloader")
-//    }
+  def addURL(u: URL): ClassLoader = {
+    //    val sysloader = ClassLoader.getSystemClassLoader().asInstanceOf[URLClassLoader]
+    //    val sysclass = Predef.classOf[URLClassLoader]
+    //    val parameters = Predef.classOf[URL]
+    //    println(u)
+    //    try {
+    //      val method = sysclass.getDeclaredMethod("addURL", parameters)
+    //      method.setAccessible(true)
+    //      method.invoke(sysloader, u)
+    //    } catch {
+    //      case t =>
+    //      t.printStackTrace()
+    //      throw new IOException("Error, could not add URL to system classloader")
+    //    }
     URLClassLoader.newInstance(Array(u), Thread.currentThread.getContextClassLoader)
   }
 
+  def index = Action {
 
-  def runCucumber = {
-    val argv: Array[String] = Array("test.feature")
-    val runtimeOptions: RuntimeOptions = new RuntimeOptions(System.getProperties, argv:_*)
-    runtimeOptions.glue.add("steps")
+    class ZipLoader extends ClassLoader(Thread.currentThread().getContextClassLoader) {
 
-    val classLoader = addFile("test-features-hacked.jar")
-    val classpath = new MultiLoader(classLoader)
-
-    val tmp = loadBackends(classpath, classLoader)
-    println("wat > ")
-    tmp.toArray.foreach { item =>
-      try {
-        val backend = item.asInstanceOf[HackedScalaBackend]
-
-        println("item > " + backend)
-        println("item > " + backend.getStepDefinitions)
-        backend.getStepDefinitions.foreach { step =>
-          println("step > " + step.toString)
-        }
-      } catch {
-        case _ =>
+      def loadEntry(zf: ZipFile, entry: ZipEntry) = {
+        val clsName = entry.getName.replace("/", ".").dropRight(6)
+        val data = SResource.fromInputStream(zf.getInputStream(entry)).byteArray
+        println("loading > " + clsName)
+        defineClass(clsName, data, 0, data.length)
       }
     }
 
+    def loadJar(path: String, zipLoader:ZipLoader) {
+      using(new ZipFile(new File(path), ZipFile.OPEN_READ)) {
+        zf =>
+          val enum = zf.entries()
+          val tmpItr = new Iterator[ZipEntry]() {
+            def hasNext = enum.hasMoreElements
 
-    val runtime: Runtime = new Runtime(classpath, classLoader, runtimeOptions)
+            def next() = enum.nextElement()
+          }
 
-    runtime.writeStepdefsJson
-    runtime.run
-  }
-  
-  def index = Action {
-    runCucumber
+          val Feature = """^.*\.feature$""".r
+          val Cls = """^.*\.class$""".r
+          val (features, classes) = tmpItr.foldLeft((List[ZipEntry](), List[ZipEntry]())) {
+            (out, entry) =>
+              entry.getName match {
+                case Feature() => (entry :: out._1, out._2)
+                case Cls() => (out._1, entry :: out._2)
+                case _ => out
+              }
+          }
+
+          def isScalaDsl(cls:Class[_]): Boolean = List(cls.getInterfaces:_*).exists { _ == classOf[ScalaDsl] }
+
+          HackedScalaBackend.dynamicallyLoadedClasses = (classes.map { cls => zipLoader.loadEntry(zf, cls) }).filter(isScalaDsl)
+      }
+    }
+
+    def runCucumber(zipLoader:ZipLoader) = {
+      val argv: Array[String] = Array("test.feature")
+      val runtimeOptions: RuntimeOptions = new RuntimeOptions(System.getProperties, argv: _*)
+      runtimeOptions.glue.add("steps")
+
+      loadJar("temp-features_2.9.1-1.0-SNAPSHOT.jar", zipLoader)
+      val classLoader = zipLoader
+      HackedScalaBackend.hackedClassLoader = classLoader
+
+      classLoader.loadClass("steps.TestStep")
+
+      val runtime: Runtime = new Runtime(new MultiLoader(classLoader), classLoader, runtimeOptions)
+
+      runtime.writeStepdefsJson
+      runtime.run
+    }
+
+    runCucumber(new ZipLoader)
 
     Ok(views.html.index("Your new application is ready."))
   }
-  
+
 }

@@ -6,8 +6,16 @@ import java.lang.reflect.Modifier
 import snippets.SnippetGenerator
 import scala.collection.JavaConversions._
 import cucumber.io.{ClasspathResourceLoader, ResourceLoader}
+import java.io.File
+import collection.mutable
+import org.reflections.Reflections
 
-class HackedScalaBackend(ignore: ResourceLoader) extends Backend {
+object HackedScalaBackend {
+  var dynamicallyLoadedClasses:List[Class[_]] = Nil
+
+  var hackedClassLoader = Thread.currentThread().getContextClassLoader
+}
+class HackedScalaBackend(someResources: ResourceLoader) extends Backend {
   private var snippetGenerator = new SnippetGenerator(new ScalaSnippetGenerator())
   private var instances: Seq[ScalaDsl] = Nil
 
@@ -28,12 +36,16 @@ class HackedScalaBackend(ignore: ResourceLoader) extends Backend {
   }
 
   def loadGlue(glue: Glue, gluePaths: JList[String]) {
-    val cl = new ClasspathResourceLoader(Thread.currentThread().getContextClassLoader)
+    val cl = new ClasspathResourceLoader(HackedScalaBackend.hackedClassLoader)
     val packages = gluePaths map {
       cucumber.io.MultiLoader.packageName(_)
     }
-    val dslClasses = packages flatMap {
-      cl.getDescendants(classOf[ScalaDsl], _)
+    println("packages > " + packages)
+    val dslClasses = packages flatMap { pkg =>
+      println("cl > " + cl)
+      val decs = cl.getDescendants(classOf[ScalaDsl], pkg)
+      println("decs >" + decs)
+      decs
     } filter {
       cls =>
         try {
@@ -43,7 +55,8 @@ class HackedScalaBackend(ignore: ResourceLoader) extends Backend {
           case e => false
         }
     }
-    println("packages > " + packages)
+
+    println("dslClasses > " + dslClasses)
     val (clsClasses, objClasses) = dslClasses partition {
       cls =>
         println("cls> "+cls)
@@ -59,8 +72,9 @@ class HackedScalaBackend(ignore: ResourceLoader) extends Backend {
         instField.setAccessible(true)
         instField.get(null).asInstanceOf[ScalaDsl]
     }
-    val clsInstances = (clsClasses map {
-      _.newInstance()
+    println("dynamicallyLoadedClasses > " + HackedScalaBackend.dynamicallyLoadedClasses)
+    val clsInstances = ((clsClasses ++ HackedScalaBackend.dynamicallyLoadedClasses) map {
+      _.newInstance().asInstanceOf[ScalaDsl]
     })
 
     instances = objInstances ++ clsInstances

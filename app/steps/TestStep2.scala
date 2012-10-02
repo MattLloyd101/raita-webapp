@@ -1,7 +1,7 @@
 package steps
 
-import cucumber.runtime.{ScalaDsl, EN}
-
+//import cucumber.runtime.{ScalaDsl, EN}
+//
 //class TestStep2 extends ScalaDsl with EN {
 //
 //  When("""^I add (\d+) and (\d+)$""") { (arg1: Double, arg2: Double) =>
