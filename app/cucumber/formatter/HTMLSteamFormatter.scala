@@ -32,7 +32,7 @@ object HTMLSteamFormatter {
   private final val MIME_TYPES_EXTENSIONS = new HashMap { }
 }
 
-class HTMLSteamFormatter(var htmlReportDir: File, stream:OutputStream) extends Formatter with Reporter {
+class HTMLSteamFormatter(stream:OutputStream) extends Formatter with Reporter {
 
   def uri(uri: String) {
     if (firstFeature) {
@@ -108,27 +108,21 @@ class HTMLSteamFormatter(var htmlReportDir: File, stream:OutputStream) extends F
     writeToJsReport("match", `match`)
   }
 
+  // TODO : This is silly, the embedded file should be in public anyway.
   def embedding(mimeType: String, data: InputStream) {
-    val extension: String = HTMLSteamFormatter.MIME_TYPES_EXTENSIONS.get(mimeType)
-    if (extension != null) {
-      val fileName: StringBuilder = new StringBuilder("embedded").append(({
-        embeddedIndex += 1
-        embeddedIndex - 1
-      })).append(".").append(extension)
-      writeBytes(data, reportFileOutputStream(fileName.toString))
-      writeToJsReport("embedding", new StringBuilder("'").append(mimeType).append("','").append(fileName).append("'").toString)
-    }
+//    val extension: String = HTMLSteamFormatter.MIME_TYPES_EXTENSIONS.get(mimeType)
+//    if (extension != null) {
+//      val fileName: StringBuilder = new StringBuilder("embedded").append(({
+//        embeddedIndex += 1
+//        embeddedIndex - 1
+//      })).append(".").append(extension)
+//      writeBytes(data, stream)
+//      writeToJsReport("embedding", new StringBuilder("'").append(mimeType).append("','").append(fileName).append("'").toString)
+//    }
   }
 
   def write(text: String) {
     writeToJsReport("write", HTMLSteamFormatter.gson.toJson(text))
-  }
-
-  private def copyReportFiles {
-    for (textAsset <- HTMLSteamFormatter.TEXT_ASSETS) {
-      val textAssetStream: InputStream = getClass.getResourceAsStream(textAsset)
-      writeBytes(textAssetStream, reportFileOutputStream(textAsset))
-    }
   }
 
   private def writeBytes(in: InputStream, out: OutputStream) {
@@ -148,20 +142,8 @@ class HTMLSteamFormatter(var htmlReportDir: File, stream:OutputStream) extends F
     }
   }
 
-  lazy val jsOut: NiceAppendable = {
-      try {
-        new NiceAppendable(new OutputStreamWriter(reportFileOutputStream(HTMLSteamFormatter.JS_REPORT_FILENAME), "UTF-8"))
-      }
-      catch {
-        case e: UnsupportedEncodingException => {
-          throw new CucumberException(e)
-        }
-      }
-    }
+  lazy val jsOut: NiceAppendable = new NiceAppendable(new OutputStreamWriter(stream, "UTF-8"))
 
-  private def reportFileOutputStream(fileName: String): OutputStream = {
-    stream
-  }
 
   private var firstFeature: Boolean = true
   private var embeddedIndex: Int = 0

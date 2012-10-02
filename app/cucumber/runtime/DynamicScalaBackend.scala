@@ -1,6 +1,5 @@
 package cucumber.runtime
 
-import java.util.{List => JList}
 import cucumber.io.ResourceLoader
 
 object DynamicScalaBackend {
@@ -19,10 +18,4 @@ class DynamicScalaBackend(loader: ResourceLoader) extends ScalaBackend(loader) {
     super.disposeWorld()
     DynamicScalaBackend.dynamicInstances = Nil
   }
-
-  override def buildWorld() {
-    println("DynamicScalaBackend.dynamicInstances> "+ DynamicScalaBackend.dynamicInstances)
-    //I don't believe scala has to do anything to clean out it's world
-  }
-
 }
