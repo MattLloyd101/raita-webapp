@@ -7,6 +7,7 @@ import scalax.io.{Resource => SResource}
 import java.net.{URL, URLClassLoader}
 import java.io.File
 import java.util.zip.{ZipEntry, ZipFile}
+import collection.JavaConversions._
 
 object Application extends Controller {
   def loadBackends(resourceLoader: ResourceLoader, classLoader: ClassLoader) = {
@@ -53,52 +54,47 @@ object Application extends Controller {
   def index = Action {
 
     class ZipLoader extends ClassLoader(Thread.currentThread().getContextClassLoader) {
-
       def loadEntry(zf: ZipFile, entry: ZipEntry) = {
         val clsName = entry.getName.replace("/", ".").dropRight(6)
         val data = SResource.fromInputStream(zf.getInputStream(entry)).byteArray
-        println("loading > " + clsName)
         defineClass(clsName, data, 0, data.length)
       }
     }
 
-    def loadJar(path: String, zipLoader:ZipLoader) {
-      using(new ZipFile(new File(path), ZipFile.OPEN_READ)) {
-        zf =>
+    def loadFromJar(path: String, zipLoader:ZipLoader, stepPkg:String) {
+      using(new ZipFile(new File(path), ZipFile.OPEN_READ)) { zf =>
           val enum = zf.entries()
           val tmpItr = new Iterator[ZipEntry]() {
             def hasNext = enum.hasMoreElements
-
             def next() = enum.nextElement()
           }
 
           val Feature = """^.*\.feature$""".r
-          val Cls = """^.*\.class$""".r
+          val Cls = """^%s/.*\.class$""".format(stepPkg).r
           val (features, classes) = tmpItr.foldLeft((List[ZipEntry](), List[ZipEntry]())) {
             (out, entry) =>
               entry.getName match {
                 case Feature() => (entry :: out._1, out._2)
-                case Cls() => (out._1, entry :: out._2)
+                case Cls() =>
+                  println("Matched > " + entry.getName)
+                  (out._1, entry :: out._2)
                 case _ => out
               }
           }
 
           def isScalaDsl(cls:Class[_]): Boolean = List(cls.getInterfaces:_*).exists { _ == classOf[ScalaDsl] }
 
-          HackedScalaBackend.dynamicallyLoadedClasses = (classes.map { cls => zipLoader.loadEntry(zf, cls) }).filter(isScalaDsl)
+          //TODO: Handle Objects with MODULE$
+          DynamicScalaBackend.dynamicInstances = (classes.map { cls => zipLoader.loadEntry(zf, cls) }).filter(isScalaDsl).map { _.newInstance().asInstanceOf[ScalaDsl] }
       }
     }
 
     def runCucumber(zipLoader:ZipLoader) = {
       val argv: Array[String] = Array("test.feature")
       val runtimeOptions: RuntimeOptions = new RuntimeOptions(System.getProperties, argv: _*)
-      runtimeOptions.glue.add("steps")
 
-      loadJar("temp-features_2.9.1-1.0-SNAPSHOT.jar", zipLoader)
+      loadFromJar("temp-features_2.9.1-1.0-SNAPSHOT.jar", zipLoader, "steps")
       val classLoader = zipLoader
-      HackedScalaBackend.hackedClassLoader = classLoader
-
-      classLoader.loadClass("steps.TestStep")
 
       val runtime: Runtime = new Runtime(new MultiLoader(classLoader), classLoader, runtimeOptions)
 
