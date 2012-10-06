@@ -75,7 +75,7 @@ class HTMLSteamFormatter(stream:OutputStream) extends Formatter with Reporter {
   def done {
     if (!firstFeature) {
       jsOut.append("});")
-      copyReportFiles
+      //copyReportFiles
     }
   }
 
